@@ -1,0 +1,30 @@
+import boto3
+
+# Initialize AWS clients
+ec2 = boto3.client('ec2')
+asg = boto3.client('autoscaling')
+
+def lambda_handler(event, context):
+    """
+    Adaptive Step-Size Scaling Logic.
+    Adjusts capacity based on CPU Utilization thresholds.
+    """
+    cpu_util = event.get('cpu_utilization', 0)
+    asg_name = 'My-Adaptive-ASG'
+    
+    # Adaptive logic: Larger steps for higher stress
+    if cpu_util > 80:
+        step_size = 3  # Aggressive scaling
+    elif cpu_util > 60:
+        step_size = 1  # Moderate scaling
+    else:
+        step_size = 0  # No action
+        
+    if step_size > 0:
+        asg.execute_policy(
+            AutoScalingGroupName=asg_name,
+            PolicyName='ScaleOutPolicy',
+            HonorCooldown=True
+        )
+    
+    return {"status": "success", "scaled_by": step_size}
